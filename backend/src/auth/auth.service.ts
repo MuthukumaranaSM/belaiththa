@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UserDto } from './dto/user.dto';
 import { Role } from './enums/role.enum';
+import { CreateCustomerDto } from './dto/create-customer.dto';
 
 @Injectable()
 export class AuthService {
@@ -226,5 +227,55 @@ export class AuthService {
       licenseNumber: user.dentist?.licenseNumber,
       shift: user.receptionist?.shift
     }));
+  }
+
+  async createCustomer(createCustomerDto: CreateCustomerDto) {
+    const { email, password, name, dateOfBirth, address, phoneNumber } = createCustomerDto;
+
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Email already registered');
+    }
+
+    // Get customer role
+    const customerRole = await this.prisma.role.findUnique({
+      where: { name: Role.CUSTOMER },
+    });
+
+    if (!customerRole) {
+      throw new BadRequestException('Customer role not found');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create customer
+    const customer = await this.prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        roleId: customerRole.id,
+        customer: {
+          create: {
+            dateOfBirth: new Date(dateOfBirth),
+            address,
+            phoneNumber,
+          },
+        },
+      },
+      include: {
+        customer: true,
+        role: true,
+      },
+    });
+
+    // Remove password from response
+    const { password: _, ...result } = customer;
+    return result;
   }
 }

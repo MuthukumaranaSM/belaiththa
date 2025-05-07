@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { Role } from './enums/role.enum';
+import { CreateCustomerDto } from './dto/create-customer.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -112,5 +113,15 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
   async getAllUsers() {
     return this.authService.getAllUsers();
+  }
+
+  @Post('create-customer')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RECEPTIONIST)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new customer' })
+  @ApiResponse({ status: 201, description: 'Customer created successfully' })
+  async createCustomer(@Body() createCustomerDto: CreateCustomerDto) {
+    return this.authService.createCustomer(createCustomerDto);
   }
 }

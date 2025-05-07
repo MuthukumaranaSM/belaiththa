@@ -128,6 +128,15 @@ export class AppointmentService {
       if (!allowedRoles.includes(userRole as Role)) {
         throw new UnauthorizedException('You do not have permission to update appointment status');
       }
+
+      // Additional validation for status transitions
+      if (appointment.status === 'COMPLETED' && updateAppointmentDto.status !== 'COMPLETED') {
+        throw new BadRequestException('Cannot change status of a completed appointment');
+      }
+
+      if (appointment.status === 'CANCELLED' && updateAppointmentDto.status !== 'CANCELLED') {
+        throw new BadRequestException('Cannot change status of a cancelled appointment');
+      }
     }
 
     return this.prisma.appointment.update({
@@ -315,7 +324,7 @@ export class AppointmentService {
   }
 
   async getReceptionistAppointments() {
-    return this.prisma.appointment.findMany({
+    const appointments = await this.prisma.appointment.findMany({
       include: {
         customer: {
           select: {
@@ -333,6 +342,8 @@ export class AppointmentService {
         appointmentDate: 'desc'
       }
     });
+    console.log('Receptionist appointments:', appointments);
+    return appointments;
   }
 
   async getCustomerAppointments(customerId: number) {

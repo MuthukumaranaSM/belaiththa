@@ -28,6 +28,15 @@ interface CreateUserData extends SignupData {
   shift?: string;
 }
 
+export interface CreateCustomerData {
+  name: string;
+  email: string;
+  password: string;
+  dateOfBirth: string;
+  address: string;
+  phoneNumber: string;
+}
+
 export const authApi = {
   login: async (data: LoginData) => {
     const response = await axios.post(`${API_URL}/auth/login`, data);
@@ -43,6 +52,10 @@ export const authApi = {
   },
   getAllUsers: async () => {
     const response = await axios.get(`${API_URL}/auth/users`);
+    return response.data;
+  },
+  createCustomer: async (data: CreateCustomerData) => {
+    const response = await axios.post(`${API_URL}/auth/create-customer`, data);
     return response.data;
   },
 };
