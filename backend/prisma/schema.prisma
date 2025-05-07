@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleType {
+  MAIN_DOCTOR
+  DENTIST
+  RECEPTIONIST
+  CUSTOMER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        RoleType @unique
+  description String?
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  password     String
+  name         String
+  role         Role      @relation(fields: [roleId], references: [id])
+  roleId       Int
+  mainDoctor   MainDoctor?
+  dentist      Dentist?
+  receptionist Receptionist?
+  customer     Customer?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  customerAppointments Appointment[] @relation("CustomerAppointments")
+  dentistAppointments  Appointment[] @relation("DentistAppointments")
+  blockedSlots        BlockedSlot[] @relation("DentistBlockedSlots")
+  prescriptions       Prescription[]
+}
+
+model MainDoctor {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        Int      @unique
+  specialization String
+  licenseNumber String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Dentist {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        Int      @unique
+  specialization String
+  licenseNumber String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Receptionist {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        Int      @unique
+  shift         String   // e.g., "MORNING", "EVENING"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Customer {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        Int      @unique
+  dateOfBirth   DateTime?
+  address       String?
+  phoneNumber   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Appointment {
+  id             Int              @id @default(autoincrement())
+  appointmentDate DateTime
+  reason         String
+  notes          String?
+  status         AppointmentStatus @default(PENDING)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  customer       User             @relation("CustomerAppointments", fields: [customerId], references: [id])
+  customerId     Int
+  dentist        User             @relation("DentistAppointments", fields: [dentistId], references: [id])
+  dentistId      Int
+
+  @@index([customerId])
+  @@index([dentistId])
+}
+
+model BlockedSlot {
+  id        String   @id @default(uuid())
+  date      DateTime
+  startTime String
+  endTime   String
+  reason    String?
+  dentist   User     @relation("DentistBlockedSlots", fields: [dentistId], references: [id])
+  dentistId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dentistId])
+}
+
+model Prescription {
+  id           Int      @id @default(autoincrement())
+  medication   String
+  dosage       String
+  instructions String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  patient      User     @relation(fields: [patientId], references: [id])
+  patientId    Int
+
+  @@map("prescriptions")
+}
