@@ -6,6 +6,7 @@ import { Role } from '../auth/enums/role.enum';
 import { AppointmentStatus } from '@prisma/client';
 import { BlockSlotDto } from './dto/block-slot.dto';
 import * as bcrypt from 'bcrypt';
+import { GenerateBillDto } from './dto/generate-bill.dto';
 
 type AllowedRole = Extract<Role, Role.MAIN_DOCTOR | Role.DENTIST | Role.RECEPTIONIST>;
 
@@ -360,6 +361,38 @@ export class AppointmentService {
         appointmentDate: 'desc'
       }
     });
+  }
+
+  async generateBill(appointmentId: string, billData: GenerateBillDto) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id: parseInt(appointmentId) },
+      include: {
+        customer: true,
+        dentist: true,
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.status !== 'COMPLETED') {
+      throw new BadRequestException('Can only generate bills for completed appointments');
+    }
+
+    // Create bill record
+    const bill = await this.prisma.bill.create({
+      data: {
+        appointmentId: parseInt(appointmentId),
+        amount: billData.amount,
+        serviceDescription: billData.serviceDescription,
+        additionalNotes: billData.additionalNotes,
+        status: 'PAID',
+        createdAt: new Date(),
+      },
+    });
+
+    return bill;
   }
 
   private async isSlotBlocked(date: Date, startTime: string, endTime: string) {

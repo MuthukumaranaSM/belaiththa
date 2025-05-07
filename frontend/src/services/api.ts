@@ -117,7 +117,15 @@ export const appointmentApi = {
   updateAppointmentStatus: async (appointmentId: number, status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED') => {
     const response = await axios.patch(`${API_URL}/appointments/${appointmentId}`, { status });
     return response.data;
-  }
+  },
+  generateBill: async (appointmentId: string, billData: {
+    serviceDescription: string;
+    amount: number;
+    additionalNotes?: string;
+  }) => {
+    const response = await axios.post(`${API_URL}/appointments/${appointmentId}/bill`, billData);
+    return response.data;
+  },
 };
 
 export const dentistApi = {

@@ -18,6 +18,7 @@ import {
   Snackbar,
   Grid,
   Chip,
+  Stack,
 } from '@mui/material';
 import { appointmentApi } from '../../services/api';
 import { format } from 'date-fns';
@@ -32,6 +33,7 @@ import {
   PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 import CreateCustomerModal from '../CreateCustomerModal';
+import { GenerateBillModal } from '../GenerateBillModal';
 
 interface Appointment {
   id: number;
@@ -54,6 +56,8 @@ export default function ReceptionistDashboard() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isCreateCustomerModalOpen, setIsCreateCustomerModalOpen] = useState(false);
+  const [isGenerateBillModalOpen, setIsGenerateBillModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const fetchAppointments = async () => {
     try {
@@ -83,6 +87,11 @@ export default function ReceptionistDashboard() {
     }
   };
 
+  const handleGenerateBill = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsGenerateBillModalOpen(true);
+  };
+
   const getStatusChip = (status: string) => {
     const statusStyles = {
       CONFIRMED: { ...dashboardStyles.statusChip, ...dashboardStyles.statusConfirmed },
@@ -103,7 +112,7 @@ export default function ReceptionistDashboard() {
     switch (appointment.status) {
       case 'PENDING':
         return (
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Stack direction="row" spacing={1}>
             <Button
               size="small"
               variant="contained"
@@ -122,7 +131,7 @@ export default function ReceptionistDashboard() {
             >
               Cancel
             </Button>
-          </Box>
+          </Stack>
         );
       case 'CONFIRMED':
         return (
@@ -134,6 +143,18 @@ export default function ReceptionistDashboard() {
             onClick={() => handleStatusChange(appointment.id, 'COMPLETED')}
           >
             Mark Complete
+          </Button>
+        );
+      case 'COMPLETED':
+        return (
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            startIcon={<DoneIcon />}
+            onClick={() => handleGenerateBill(appointment)}
+          >
+            Generate Bill
           </Button>
         );
       default:
@@ -274,6 +295,18 @@ export default function ReceptionistDashboard() {
           setIsCreateCustomerModalOpen(false);
         }}
       />
+
+      {/* Generate Bill Modal */}
+      {selectedAppointment && (
+        <GenerateBillModal
+          isOpen={isGenerateBillModalOpen}
+          onClose={() => {
+            setIsGenerateBillModalOpen(false);
+            setSelectedAppointment(null);
+          }}
+          appointment={selectedAppointment}
+        />
+      )}
 
       {/* Notifications */}
       <Snackbar

@@ -8,6 +8,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleType } from '@prisma/client';
 import { BlockSlotDto } from './dto/block-slot.dto';
+import { GenerateBillDto } from './dto/generate-bill.dto';
 
 @ApiTags('Appointments')
 @Controller('appointments')
@@ -139,5 +140,20 @@ export class AppointmentController {
   @ApiResponse({ status: 200, description: 'Return customer appointments' })
   async getCustomerAppointments(@Param('customerId') customerId: string) {
     return this.appointmentService.getCustomerAppointments(+customerId);
+  }
+
+  @Post(':id/bill')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleType.RECEPTIONIST)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate bill for a completed appointment' })
+  @ApiResponse({ status: 200, description: 'Bill generated successfully' })
+  @ApiResponse({ status: 404, description: 'Appointment not found' })
+  @ApiResponse({ status: 400, description: 'Can only generate bills for completed appointments' })
+  async generateBill(
+    @Param('id') id: string,
+    @Body() billData: GenerateBillDto,
+  ) {
+    return this.appointmentService.generateBill(id, billData);
   }
 }
